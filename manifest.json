@@ -1,10 +1,10 @@
 {
   "name": "MediSuivi",
   "short_name": "MediSuivi",
-  "id": "/",
+  "id": "/Medisuivi-/",
   "description": "Application de suivi de prise de medicament et rappels",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/Medisuivi-/",
+  "scope": "/Medisuivi-/",
   "display": "standalone",
   "orientation": "any",
   "dir": "ltr",
