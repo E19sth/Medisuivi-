@@ -63,6 +63,12 @@
   }
   .brand h1{font-family:'Poppins';font-weight:700;font-size:19px;margin:0;letter-spacing:-0.02em;}
   .brand span{display:block;font-size:10px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-top:1px;}
+  .header-right{display:flex;align-items:center;gap:8px;}
+  .bell-btn{
+    background:var(--panel);border:1px solid #123644;width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--dim);
+  }
+  .bell-btn.on{color:var(--cyan-400);border-color:var(--teal-700);}
   .streak-badge{
     background:var(--panel);border:1px solid #123644;padding:7px 12px;border-radius:999px;
     font-size:12px;color:var(--mint-300);font-weight:600;display:flex;align-items:center;gap:6px;
@@ -88,6 +94,16 @@
   .ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Poppins';font-weight:700;font-size:17px;}
   .ring-text h2{margin:0 0 3px;font-family:'Poppins';font-size:15px;}
   .ring-text p{margin:0;font-size:12.5px;color:var(--dim);line-height:1.4;}
+
+  .reminder-banner{
+    background:var(--panel);border:1px solid #123644;border-radius:14px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--dim);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .reminder-banner button{
+    background:var(--teal-500);color:var(--white);border:none;border-radius:10px;
+    padding:8px 12px;font-size:12px;font-family:'Poppins';font-weight:600;cursor:pointer;flex-shrink:0;
+  }
 
   .section-title{
     font-family:'Poppins';font-weight:600;font-size:13px;
@@ -154,6 +170,7 @@
   }
   .dot.taken{background:var(--green);color:#06210f;}
   .dot.pending{background:var(--orange);color:#3a1f00;}
+  .dot.missed{background:var(--danger);color:#3a0808;}
   .dot.future{background:var(--gray-dot);}
   .dot.na{background:transparent;}
   .legend{display:flex;gap:16px;margin-top:14px;font-size:11.5px;color:var(--dim);}
@@ -199,8 +216,13 @@
     flex:1;background:none;border:none;color:var(--dim);cursor:pointer;
     display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-family:'Inter';padding:4px;
   }
-  nav.bottom button .ic{font-size:19px;}
+  nav.bottom button .ic{font-size:19px;position:relative;}
   nav.bottom button.active{color:var(--cyan-400);}
+  .nav-badge{
+    position:absolute;top:-4px;right:-8px;background:var(--orange);color:#3a1f00;
+    font-size:9.5px;font-weight:700;min-width:15px;height:15px;border-radius:999px;
+    display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:'Poppins';
+  }
 
   /* ---- Modal ---- */
   .overlay{
@@ -254,13 +276,22 @@
         <span>Prendre soin, suivre, progresser</span>
       </div>
     </div>
-    <div class="streak-badge" id="streakBadge">🔥 0 j.</div>
+    <div class="header-right">
+      <button class="bell-btn" id="bellBtn" title="Activer les rappels">🔔</button>
+      <div class="streak-badge" id="streakBadge">🔥 0 j.</div>
+    </div>
   </header>
 
   <main>
 
     <!-- SCREEN: TODAY -->
     <section class="screen active" id="screen-today">
+
+      <div class="reminder-banner" id="reminderBanner" style="display:none;">
+        <span>🔔 Active les rappels pour ne plus oublier une prise.</span>
+        <button id="enableRemindersBtn">Activer</button>
+      </div>
+
       <div class="ring-card">
         <div class="ring">
           <svg width="78" height="78">
@@ -294,6 +325,7 @@
         <div class="legend">
           <span><i style="background:var(--green)"></i> Pris</span>
           <span><i style="background:var(--orange)"></i> En attente</span>
+          <span><i style="background:var(--danger)"></i> Manqué</span>
           <span><i style="background:var(--gray-dot)"></i> À venir</span>
         </div>
       </div>
@@ -335,7 +367,7 @@
   </main>
 
   <nav class="bottom">
-    <button class="nav-btn active" data-screen="today"><span class="ic">🏠</span>Aujourd'hui</button>
+    <button class="nav-btn active" data-screen="today"><span class="ic">🏠<span class="nav-badge" id="missedBadge" style="display:none;">0</span></span>Aujourd'hui</button>
     <button class="nav-btn" data-screen="meds"><span class="ic">💊</span>Médicaments</button>
     <button class="nav-btn" data-screen="week"><span class="ic">📅</span>Semaine</button>
     <button class="nav-btn" data-screen="premium"><span class="ic">👑</span>Premium</button>
@@ -382,8 +414,10 @@
 <script>
 const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 const STORE_KEY = "medisuivi-state-v1";
-let state = { medications: [], logs: {}, isPremium: false };
+let state = { medications: [], logs: {}, isPremium: false, remindersEnabled: false };
 let pendingTimes = [];
+let rappelsActifs = []; // timers actifs pour les rappels
+const MISSED_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 heures avant de marquer une dose comme manquée
 
 function todayKey(d=new Date()){
   return d.toISOString().slice(0,10);
@@ -406,11 +440,16 @@ async function loadState(){
       state = JSON.parse(raw);
       state.medications = state.medications || [];
       state.logs = state.logs || {};
+      state.remindersEnabled = state.remindersEnabled || false;
     }
   }catch(e){
     console.log("Aucun état sauvegardé, démarrage à zéro.");
   }
   render();
+  updateBellUI();
+  if(state.remindersEnabled && Notification.permission === 'granted'){
+    scheduleReminders();
+  }
 }
 async function saveState(){
   try{
@@ -419,11 +458,7 @@ async function saveState(){
     console.error("Erreur de sauvegarde", e);
   }
 }
-/* NOTE: localStorage suffit pour le MVP local. Pour une vraie synchronisation
-   multi-appareil ou un compte utilisateur, remplacer par @capacitor/preferences
-   ou une base de données (SQLite / backend). */
 
-/* ---------- NAV ---------- */
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -434,6 +469,128 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     if(btn.dataset.screen==='premium') renderPremium();
   });
 });
+
+/* ---------- RAPPELS / ALARMES ---------- */
+
+function updateBellUI(){
+  const bell = document.getElementById('bellBtn');
+  const banner = document.getElementById('reminderBanner');
+  const granted = ("Notification" in window) && Notification.permission === 'granted' && state.remindersEnabled;
+  bell.classList.toggle('on', granted);
+  bell.textContent = granted ? '🔔' : '🔕';
+  banner.style.display = granted ? 'none' : 'flex';
+}
+
+async function activerRappels(){
+  if (!("Notification" in window)) {
+    toast("Notifications non supportées sur ce navigateur");
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    toast("Notifications bloquées — active-les dans les réglages du navigateur");
+    return;
+  }
+  let permission = Notification.permission;
+  if (permission !== 'granted') {
+    permission = await Notification.requestPermission();
+  }
+  if (permission === 'granted') {
+    state.remindersEnabled = true;
+    await saveState();
+    updateBellUI();
+    scheduleReminders();
+    toast("Rappels activés ✓");
+  } else {
+    toast("Permission refusée");
+  }
+}
+
+document.getElementById('bellBtn').addEventListener('click', async ()=>{
+  if(state.remindersEnabled){
+    state.remindersEnabled = false;
+    await saveState();
+    rappelsActifs.forEach(id => clearTimeout(id));
+    rappelsActifs = [];
+    updateBellUI();
+    toast("Rappels désactivés");
+  } else {
+    activerRappels();
+  }
+});
+document.getElementById('enableRemindersBtn').addEventListener('click', activerRappels);
+
+function scheduleReminders(){
+  rappelsActifs.forEach(id => clearTimeout(id));
+  rappelsActifs = [];
+
+  if(!state.remindersEnabled || Notification.permission !== 'granted') return;
+
+  state.medications.forEach(med=>{
+    med.times.forEach(time=>{
+      programmerUneAlarme(med, time);
+    });
+  });
+}
+
+function programmerUneAlarme(med, timeStr){
+  const [h, m] = timeStr.split(":").map(Number);
+  const maintenant = new Date();
+  let prochaine = new Date();
+  prochaine.setHours(h, m, 0, 0);
+  if(prochaine <= maintenant){
+    prochaine.setDate(prochaine.getDate()+1);
+  }
+  const delai = prochaine.getTime() - maintenant.getTime();
+
+  const timerId = setTimeout(()=>{
+    declencherNotification(med, timeStr);
+    programmerUneAlarme(med, timeStr);
+  }, delai);
+
+  rappelsActifs.push(timerId);
+}
+
+function declencherNotification(med, timeStr){
+  const titre = `💊 C'est l'heure : ${med.name}`;
+  const options = {
+    body: `${med.dosage || ''} · prévu à ${timeStr}`,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    vibrate: [200,100,200,100,200],
+    tag: `${med.id}__${timeStr}`,
+    requireInteraction: true,
+    data: { medId: med.id, time: timeStr },
+    actions: [
+      { action: 'pris', title: '✅ Pris' },
+      { action: 'reporter', title: '⏰ Reporter 10 min' }
+    ]
+  };
+
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(titre, options));
+  } else if (Notification.permission === 'granted') {
+    new Notification(titre, { body: options.body, icon: options.icon, vibrate: options.vibrate });
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event)=>{
+    const { type, medId, time } = event.data || {};
+    if(!medId || !time) return;
+    const key = todayKey();
+    if(type === 'MARQUER_PRIS'){
+      setDoseStatus(medId, key, time, 'taken');
+      toast("Marqué comme pris ✓");
+    } else if(type === 'REPORTER'){
+      const med = state.medications.find(m=>m.id===medId);
+      if(med){
+        const timerId = setTimeout(()=> declencherNotification(med, time), 10*60*1000);
+        rappelsActifs.push(timerId);
+        toast("Rappel reporté de 10 min");
+      }
+    }
+  });
+}
 
 /* ---------- ADD MEDICATION MODAL ---------- */
 const overlay = document.getElementById('overlay');
@@ -494,13 +651,59 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   state.medications.push({
     id: 'm'+Date.now(),
     name, dosage, form,
-    times: [...pendingTimes]
+    times: [...pendingTimes],
+    createdAt: todayKey()
   });
   await saveState();
   closeModal();
   render();
+  scheduleReminders();
   toast("Médicament ajouté ✓");
 });
+
+/* ---------- DÉTECTION AUTOMATIQUE DES DOSES MANQUÉES ---------- */
+async function checkMissedDoses(){
+  const key = todayKey();
+  const now = new Date();
+  let changed = false;
+
+  state.medications.forEach(m=>{
+    m.times.forEach(t=>{
+      const status = getDoseStatus(m.id, key, t);
+      if(status === 'pending'){
+        const [h, mi] = t.split(":").map(Number);
+        const scheduled = new Date();
+        scheduled.setHours(h, mi, 0, 0);
+        if(now.getTime() - scheduled.getTime() >= MISSED_THRESHOLD_MS){
+          state.logs[key] = state.logs[key] || {};
+          state.logs[key][m.id] = state.logs[key][m.id] || {};
+          state.logs[key][m.id][t] = 'missed';
+          changed = true;
+        }
+      }
+    });
+  });
+
+  if(changed) await saveState();
+  return changed;
+}
+
+function updateMissedBadge(){
+  const key = todayKey();
+  let missedCount = 0;
+  state.medications.forEach(m=>{
+    m.times.forEach(t=>{
+      if(getDoseStatus(m.id, key, t) === 'missed') missedCount++;
+    });
+  });
+  const badge = document.getElementById('missedBadge');
+  if(missedCount > 0){
+    badge.style.display = 'flex';
+    badge.textContent = missedCount > 9 ? '9+' : missedCount;
+  } else {
+    badge.style.display = 'none';
+  }
+}
 
 /* ---------- TODAY ---------- */
 function getDoseStatus(medId, dateKey, time){
@@ -599,6 +802,7 @@ function renderMeds(){
       state.medications = state.medications.filter(x=>x.id!==m.id);
       await saveState();
       render();
+      scheduleReminders();
       toast("Médicament supprimé");
     });
     wrap.appendChild(card);
@@ -622,7 +826,7 @@ function renderWeek(){
     return;
   }
   const now = new Date();
-  const dow = (now.getDay()+6)%7; // 0=Mon
+  const dow = (now.getDay()+6)%7;
   const monday = new Date(now);
   monday.setDate(now.getDate()-dow);
   const weekDates = [...Array(7)].map((_,i)=>{
@@ -638,10 +842,22 @@ function renderWeek(){
       const key = todayKey(d);
       const isFuture = d.setHours(0,0,0,0) > new Date().setHours(0,0,0,0);
       if(m.times.length===0){ html += `<td><div class="dot na"></div></td>`; return; }
-      const statuses = m.times.map(t=>getDoseStatus(m.id,key,t));
+      const isToday = key === todayKey();
+      const isPastDay = !isFuture && !isToday;
+
+      if(m.createdAt && key < m.createdAt){
+        html += `<td><div class="dot na"></div></td>`;
+        return;
+      }
+
+      let statuses = m.times.map(t=>getDoseStatus(m.id,key,t));
+      if(isPastDay){
+        statuses = statuses.map(s => s === 'pending' ? 'missed' : s);
+      }
       let cls, sym;
       if(isFuture){ cls='future'; sym=''; }
       else if(statuses.every(s=>s==='taken')){ cls='taken'; sym='✓'; }
+      else if(statuses.some(s=>s==='missed')){ cls='missed'; sym='✕'; }
       else { cls='pending'; sym=''; }
       html += `<td><div class="dot ${cls}">${sym}</div></td>`;
     });
@@ -677,14 +893,18 @@ function renderPremium(){
 }
 
 /* ---------- RENDER ALL ---------- */
-function render(){
+async function render(){
+  await checkMissedDoses();
   renderToday();
   renderMeds();
+  updateMissedBadge();
   if(document.getElementById('screen-week').classList.contains('active')) renderWeek();
   if(document.getElementById('screen-premium').classList.contains('active')) renderPremium();
 }
 
 loadState();
+
+setInterval(()=>{ render(); }, 60 * 1000);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
