@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediSuivi</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1ea7b8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071620;
+    --panel:#0c2735;
+    --panel-2:#0f3140;
+    --teal-900:#0a4d54;
+    --teal-700:#0f7a86;
+    --teal-500:#1ea7b8;
+    --cyan-400:#4fd8d1;
+    --mint-300:#9ff0d6;
+    --white:#f4fbfb;
+    --dim:#7fa3ac;
+    --green:#3ddc84;
+    --orange:#ff9d4d;
+    --gray-dot:#233c46;
+    --gold:#f0c14b;
+    --danger:#ff6b6b;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:radial-gradient(circle at 50% 0%, #0e2f3a 0%, var(--bg) 55%);
+    font-family:'Inter',sans-serif;
+    color:var(--white);
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .app{
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    background:transparent;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  header.top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 20px 8px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:36px;height:36px;border-radius:50%;
+    background:conic-gradient(from 220deg, var(--teal-500), var(--cyan-400), var(--teal-900));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Poppins';font-weight:800;font-size:15px;color:var(--bg);
+  }
+  .brand h1{font-family:'Poppins';font-weight:700;font-size:19px;margin:0;letter-spacing:-0.02em;}
+  .brand span{display:block;font-size:10px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-top:1px;}
+  .header-right{display:flex;align-items:center;gap:8px;}
+  .bell-btn{
+    background:var(--panel);border:1px solid #123644;width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--dim);
+  }
+  .bell-btn.on{color:var(--cyan-400);border-color:var(--teal-700);}
+  .streak-badge{
+    background:var(--panel);border:1px solid #123644;padding:7px 12px;border-radius:999px;
+    font-size:12px;color:var(--mint-300);font-weight:600;display:flex;align-items:center;gap:6px;
+  }
+  main{flex:1;padding:6px 20px 100px;overflow-y:auto;}
+  .screen{display:none;animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---- Today ---- */
+  .ring-card{
+    background:linear-gradient(160deg, var(--panel-2), var(--panel));
+    border:1px solid #123644;
+    border-radius:var(--radius);
+    padding:22px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin:10px 0 20px;
+  }
+  .ring{width:78px;height:78px;flex-shrink:0;position:relative;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Poppins';font-weight:700;font-size:17px;}
+  .ring-text h2{margin:0 0 3px;font-family:'Poppins';font-size:15px;}
+  .ring-text p{margin:0;font-size:12.5px;color:var(--dim);line-height:1.4;}
+
+  .reminder-banner{
+    background:var(--panel);border:1px solid #123644;border-radius:14px;
+    padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--dim);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .reminder-banner button{
+    background:var(--teal-500);color:var(--white);border:none;border-radius:10px;
+    padding:8px 12px;font-size:12px;font-family:'Poppins';font-weight:600;cursor:pointer;flex-shrink:0;
+  }
+
+  .section-title{
+    font-family:'Poppins';font-weight:600;font-size:13px;
+    color:var(--dim);text-transform:uppercase;letter-spacing:0.07em;
+    margin:22px 0 10px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .dose-item{
+    display:flex;align-items:center;gap:13px;
+    background:var(--panel);border:1px solid #123644;
+    border-radius:14px;padding:13px 14px;margin-bottom:10px;
+  }
+  .dose-icon{
+    width:38px;height:38px;border-radius:11px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+    background:var(--teal-900);
+  }
+  .dose-info{flex:1;min-width:0;}
+  .dose-info b{display:block;font-size:14.5px;font-weight:600;}
+  .dose-info span{font-size:12px;color:var(--dim);}
+  .check-btn{
+    width:34px;height:34px;border-radius:50%;border:2px solid var(--gray-dot);
+    background:transparent;flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:transparent;font-size:15px;
+    transition:.15s;
+  }
+  .check-btn.taken{background:var(--green);border-color:var(--green);color:#06210f;}
+  .check-btn.missed{background:var(--orange);border-color:var(--orange);color:#3a1f00;}
+  .empty{
+    text-align:center;padding:30px 10px;color:var(--dim);font-size:13px;
+    background:var(--panel);border:1px dashed #17414f;border-radius:14px;
+  }
+
+  /* ---- Médicaments ---- */
+  .med-card{
+    background:var(--panel);border:1px solid #123644;border-radius:16px;
+    padding:15px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start;
+  }
+  .med-card .dose-icon{width:42px;height:42px;font-size:19px;}
+  .med-meta{flex:1;}
+  .med-meta b{font-size:15px;}
+  .med-meta .dosage{font-size:12.5px;color:var(--mint-300);margin:2px 0 6px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{background:var(--teal-900);color:var(--cyan-400);font-size:11px;padding:3px 9px;border-radius:999px;}
+  .icon-btn{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:4px;}
+  .icon-btn:hover{color:var(--danger);}
+
+  .add-btn{
+    width:100%;padding:14px;border-radius:14px;border:none;cursor:pointer;
+    background:linear-gradient(135deg, var(--teal-500), var(--teal-900));
+    color:var(--white);font-family:'Poppins';font-weight:600;font-size:14.5px;
+    display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;
+  }
+  .add-btn.locked{background:var(--panel);border:1px dashed #244653;color:var(--dim);}
+
+  /* ---- Semaine ---- */
+  .week-card{background:var(--panel);border:1px solid #123644;border-radius:var(--radius);padding:16px;margin-top:8px;overflow-x:auto;}
+  table.week{border-collapse:separate;border-spacing:6px;width:100%;min-width:340px;}
+  table.week th{font-size:10.5px;color:var(--dim);font-weight:600;padding-bottom:4px;}
+  table.week td{text-align:center;}
+  .med-row-label{text-align:left !important;font-size:12px;font-weight:600;padding-right:6px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dot{
+    width:24px;height:24px;border-radius:50%;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .dot.taken{background:var(--green);color:#06210f;}
+  .dot.pending{background:var(--orange);color:#3a1f00;}
+  .dot.missed{background:var(--danger);color:#3a0808;}
+  .dot.future{background:var(--gray-dot);}
+  .dot.na{background:transparent;}
+  .legend{display:flex;gap:16px;margin-top:14px;font-size:11.5px;color:var(--dim);}
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;}
+
+  /* ---- Premium ---- */
+  .plan-card{
+    border-radius:var(--radius);padding:20px;margin-bottom:14px;border:1px solid #123644;
+  }
+  .plan-card.free{background:var(--panel);}
+  .plan-card.pro{
+    background:linear-gradient(155deg,#1a3d2e,#0c2735);
+    border:1px solid var(--gold);position:relative;
+  }
+  .plan-badge{
+    position:absolute;top:-10px;right:16px;background:var(--gold);color:#3a2c00;
+    font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;font-family:'Poppins';
+  }
+  .plan-card h3{font-family:'Poppins';margin:0 0 3px;font-size:17px;}
+  .price{font-family:'Poppins';font-weight:700;font-size:26px;margin:8px 0 12px;}
+  .price small{font-size:12px;font-weight:500;color:var(--dim);}
+  .plan-card ul{list-style:none;margin:0 0 16px;padding:0;}
+  .plan-card li{font-size:13px;color:var(--dim);padding:5px 0;display:flex;gap:8px;align-items:flex-start;}
+  .plan-card.pro li{color:#d7f5e6;}
+  .plan-btn{
+    width:100%;padding:13px;border-radius:12px;border:none;cursor:pointer;
+    font-family:'Poppins';font-weight:600;font-size:14px;
+  }
+  .plan-btn.pro{background:var(--gold);color:#3a2c00;}
+  .plan-btn.current{background:transparent;border:1px solid #244653;color:var(--dim);}
+  .note-box{background:var(--panel);border:1px solid #123644;border-radius:14px;padding:14px;font-size:12px;color:var(--dim);line-height:1.6;margin-top:6px;}
+
+  /* ---- Nav ---- */
+  nav.bottom{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:430px;
+    background:rgba(7,22,32,0.92);backdrop-filter:blur(10px);
+    border-top:1px solid #123644;
+    display:flex;padding:10px 8px 14px;
+  }
+  nav.bottom button{
+    flex:1;background:none;border:none;color:var(--dim);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-family:'Inter';padding:4px;
+  }
+  nav.bottom button .ic{font-size:19px;position:relative;}
+  nav.bottom button.active{color:var(--cyan-400);}
+  .nav-badge{
+    position:absolute;top:-4px;right:-8px;background:var(--orange);color:#3a1f00;
+    font-size:9.5px;font-weight:700;min-width:15px;height:15px;border-radius:999px;
+    display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:'Poppins';
+  }
+
+  /* ---- Modal ---- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(3,10,15,0.72);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .sheet{
+    width:100%;max-width:430px;background:var(--panel-2);border-radius:22px 22px 0 0;
+    padding:22px 20px 26px;max-height:86vh;overflow-y:auto;
+    border-top:1px solid #17414f;
+  }
+  .sheet h3{font-family:'Poppins';margin:0 0 16px;font-size:17px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;}
+  .field input, .field select{
+    width:100%;padding:11px 13px;border-radius:11px;border:1px solid #1d4b58;
+    background:var(--bg);color:var(--white);font-size:14px;font-family:'Inter';
+  }
+  .times-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .time-chip{
+    background:var(--teal-900);color:var(--cyan-400);padding:6px 10px;border-radius:10px;font-size:12.5px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .time-chip button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;}
+  .add-time{
+    background:none;border:1px dashed #1d4b58;color:var(--dim);border-radius:10px;
+    padding:6px 12px;font-size:12.5px;cursor:pointer;
+  }
+  .sheet-actions{display:flex;gap:10px;margin-top:18px;}
+  .btn-secondary{flex:1;padding:12px;border-radius:12px;border:1px solid #244653;background:none;color:var(--dim);font-family:'Poppins';font-weight:600;cursor:pointer;}
+  .btn-primary{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--teal-500),var(--teal-900));color:var(--white);font-family:'Poppins';font-weight:600;cursor:pointer;}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--cyan-400);color:#062a2a;padding:11px 18px;border-radius:999px;
+    font-size:13px;font-weight:600;font-family:'Poppins';z-index:80;
+    opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark">MS</div>
+      <div>
+        <h1>MediSuivi</h1>
+        <span>Prendre soin, suivre, progresser</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="bell-btn" id="bellBtn" title="Activer les rappels">🔔</button>
+      <div class="streak-badge" id="streakBadge">🔥 0 j.</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- SCREEN: TODAY -->
+    <section class="screen active" id="screen-today">
+
+      <div class="reminder-banner" id="reminderBanner" style="display:none;">
+        <span>🔔 Active les rappels pour ne plus oublier une prise.</span>
+        <button id="enableRemindersBtn">Activer</button>
+      </div>
+
+      <div class="ring-card">
+        <div class="ring">
+          <svg width="78" height="78">
+            <circle cx="39" cy="39" r="32" stroke="#17414f" stroke-width="9" fill="none"/>
+            <circle id="ringProgress" cx="39" cy="39" r="32" stroke="#3ddc84" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="ring-label" id="ringLabel">0%</div>
+        </div>
+        <div class="ring-text">
+          <h2 id="todayDateLabel">Aujourd'hui</h2>
+          <p>Taux de prise du jour. Cochez chaque médicament pris pour progresser.</p>
+        </div>
+      </div>
+
+      <div class="section-title">Doses d'aujourd'hui</div>
+      <div id="todayList"></div>
+    </section>
+
+    <!-- SCREEN: MEDS -->
+    <section class="screen" id="screen-meds">
+      <div class="section-title">Mes médicaments <span id="medCount" style="color:var(--dim);font-weight:500;text-transform:none;letter-spacing:0;"></span></div>
+      <div id="medList"></div>
+      <button class="add-btn" id="addMedBtn">➕ Ajouter un médicament</button>
+    </section>
+
+    <!-- SCREEN: WEEK -->
+    <section class="screen" id="screen-week">
+      <div class="section-title">Pilulier hebdomadaire</div>
+      <div class="week-card">
+        <div id="weekTableWrap"></div>
+        <div class="legend">
+          <span><i style="background:var(--green)"></i> Pris</span>
+          <span><i style="background:var(--orange)"></i> En attente</span>
+          <span><i style="background:var(--danger)"></i> Manqué</span>
+          <span><i style="background:var(--gray-dot)"></i> À venir</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN: PREMIUM -->
+    <section class="screen" id="screen-premium">
+      <div class="section-title">Votre abonnement</div>
+
+      <div class="plan-card free" id="freeCardBox">
+        <h3>Gratuit</h3>
+        <div class="price">0€ <small>/toujours</small></div>
+        <ul>
+          <li>✅ Jusqu'à 3 médicaments</li>
+          <li>✅ Suivi quotidien &amp; pilulier hebdo</li>
+          <li>✅ Taux d'observance simple</li>
+          <li>🔒 Rappels avancés multi-heures illimités</li>
+          <li>🔒 Statistiques détaillées &amp; export</li>
+        </ul>
+      </div>
+
+      <div class="plan-card pro">
+        <div class="plan-badge">RECOMMANDÉ</div>
+        <h3>Premium</h3>
+        <div class="price">2,99€ <small>/mois</small></div>
+        <ul>
+          <li>✨ Médicaments illimités</li>
+          <li>✨ Rappels avancés &amp; multi-heures</li>
+          <li>✨ Statistiques détaillées + export</li>
+          <li>✨ Historique complet illimité</li>
+          <li>✨ Support prioritaire</li>
+        </ul>
+        <button class="plan-btn pro" id="upgradeBtn">Passer à Premium</button>
+      </div>
+
+      <div class="note-box" id="premiumNote"></div>
+    </section>
+
+  </main>
+
+  <nav class="bottom">
+    <button class="nav-btn active" data-screen="today"><span class="ic">🏠<span class="nav-badge" id="missedBadge" style="display:none;">0</span></span>Aujourd'hui</button>
+    <button class="nav-btn" data-screen="meds"><span class="ic">💊</span>Médicaments</button>
+    <button class="nav-btn" data-screen="week"><span class="ic">📅</span>Semaine</button>
+    <button class="nav-btn" data-screen="premium"><span class="ic">👑</span>Premium</button>
+  </nav>
+
+  <!-- ADD MED MODAL -->
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <h3>Ajouter un médicament</h3>
+      <div class="field">
+        <label>Nom du médicament</label>
+        <input type="text" id="medName" placeholder="Ex. Doliprane">
+      </div>
+      <div class="field">
+        <label>Dosage</label>
+        <input type="text" id="medDosage" placeholder="Ex. 500mg, 1 comprimé">
+      </div>
+      <div class="field">
+        <label>Forme</label>
+        <select id="medForm">
+          <option value="💊">💊 Comprimé</option>
+          <option value="💉">💉 Injection</option>
+          <option value="🧴">🧴 Sirop / gouttes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Heures de prise</label>
+        <div class="times-row" id="timesRow"></div>
+        <div style="margin-top:8px;">
+          <input type="time" id="timeInput" value="08:00" style="width:auto;display:inline-block;padding:8px 10px;">
+          <button class="add-time" id="addTimeBtn" type="button">+ Ajouter l'heure</button>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn-secondary" id="cancelBtn">Annuler</button>
+        <button class="btn-primary" id="saveBtn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="bundle.js"></script>
+</body>
+</html>
