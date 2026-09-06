@@ -1,0 +1,15 @@
+{
+  "appId": "com.medisuivi.app",
+  "appName": "MediSuivi",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_medisuivi",
+      "iconColor": "#1ea7b8"
+    }
+  }
+}
